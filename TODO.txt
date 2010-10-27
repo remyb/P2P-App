@@ -1,0 +1,5 @@
+0) Develop regex expression or other filename "name" checking
+1) Create UDP socket methods for reading/writing data
+2) Threading
+3) Enable STDIN query
+4) Test, test, test
