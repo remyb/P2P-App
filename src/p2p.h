@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "messageheader.h"
 #include "libstring.h"
 
 void startListener(int udpPort);

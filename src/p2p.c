@@ -2,6 +2,11 @@
 
 int main(int argc, char *argv[])
 {
+  if(argc == 1) {
+    printf("usage: ./p2p port [peer socket] [filename]\n");
+    exit(1);
+  }
+
   int listeningPort = atoi(argv[1]);
 
   if(listeningPort == 0 || listeningPort < 1025 || listeningPort > 65536) {
@@ -68,13 +73,14 @@ int main(int argc, char *argv[])
   **/
   for(temp = 2; temp < argc; temp++) {
     if(containsChar(argv[temp], '/') == -1) {
-      // need regex expression for strict filename format
 
-      char filename[30] = "content/";
-      strcat(filename, argv[temp]);
+      if(validFilename(argv[temp]) == 0) {
+        printf("error: invalid filename %s\n", argv[temp]);
+        exit(1);
+      }
 
       FILE * fileio;
-      fileio = fopen(filename, "r");
+      fileio = fopen(argv[temp], "r");
       if(fileio == NULL) {
 	printf("error: missing a content file called %s\n", argv[temp]);
 	exit(1);
@@ -102,12 +108,12 @@ int main(int argc, char *argv[])
 
 void startListener(int udpPort) {
   int socket_fd;
-  //int client_fd; // is this really needed?
+  //int client_fd; // needed?
   int status = 0;
-  int numOfBytes = 0;
+  //  int numOfBytes = 0; // needed?
 
   char udpService[10];
-  char udpBuffer[256];
+  //char udpBuffer[256]; // needed?
 
   struct addrinfo hints;
   struct addrinfo *listener;

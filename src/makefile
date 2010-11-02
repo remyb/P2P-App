@@ -27,10 +27,10 @@ all: p2p
 p2p: p2p.o libstring.o
 	$(CC) p2p.o libstring.o -o p2p -lpthread
 
-p2p.o: p2p.c p2p.h libstring.h
+p2p.o: p2p.c p2p.h libstring.h messageheader.h
 	$(CC) $(CFLAGS) p2p.c
 
-libstring.o: libstring.c libstring.h
+libstring.o: libstring.c libstring.h messageheader.h
 	$(CC) $(CFLAGS) libstring.c
 
 clean:

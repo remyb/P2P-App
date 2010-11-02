@@ -33,7 +33,7 @@ typedef struct _ListingMsg
 	//uint8_t selector_value;//0x4C
 	uint16_t message_count;
 	ResourceName res_name[56]; //56 * 26
-}packed_data ListingMsg
+}packed_data ListingMsg;
 
 typedef struct _DataMsg
 {
