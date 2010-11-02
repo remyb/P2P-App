@@ -14,10 +14,20 @@ typedef struct _UDPHandler
 	int sockfd;
 	int (*ret_listening_sockfd)(char *addr,char *port);
 }UDPHandler;
-
 int ret_udp_sockfd(char *addr,char *port);
-//pthread callback
+
+typedef struct _IOHandler
+{
+	int l;
+}IOHandler;
+typedef struct _TOHandler
+{
+	int l;
+}TOHandler;
+//pthread callbacks
 void *handle_p2p_client(void *udphandler);
+void *handle_stdin(void *iohandler);
+void *handle_timeouts(void *timeouthandler);
 
 
 
