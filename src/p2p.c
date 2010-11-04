@@ -2,146 +2,260 @@
 
 int main(int argc, char *argv[])
 {
+  if(argc == 1) {
+    printf("usage: ./p2p port [peer socket] [filename]\n");
+    exit(1);
+  }
+
   int listeningPort = atoi(argv[1]);
 
   if(listeningPort == 0 || listeningPort < 1025 || listeningPort > 65536) {
     printf("error: use a port in the unreserved range\n");
     exit(1);
   } else {
-    printf("listening port: %d/udp\n", listeningPort);
+    printf("Listening port -> %d/udp\n", listeningPort);
   }
 
   int countPeers = 0;
   int countFiles = 0;
   int loop = 0;
 
+  struct p2p_peer * p2p_peers = (struct p2p_peer *) malloc(sizeof(struct p2p_peer));
+  memset(p2p_peers, 0, sizeof(struct p2p_peer));
+
+  struct p2p_peer * temp_peer = p2p_peers;
+  int isFirstPeer = 1;
+
+  struct p2p_file * p2p_files = (struct p2p_file *) malloc(sizeof(struct p2p_file));
+  memset(p2p_files, 0, sizeof(struct p2p_file));
+
+  struct p2p_file * temp_file = p2p_files;
+  int isFirstFile = 1;
+  
   for(loop = 2; loop < argc; loop++) {
-    if(containsChar(argv[loop], '/') >= 0)
-      countPeers++;
-    else
-      countFiles++;
-  }
-
-  #ifdef DEBUG
-    printf("Peer Count: %d\n", countPeers);
-    printf("File Count: %d\n", countFiles);
-  #endif
-
-  /**
-   Build an array of p2p peers using sockaddr_in
-  **/
-  struct sockaddr_in ** p2p_peers = NULL;
-  p2p_peers = malloc(countPeers * sizeof(struct sockaddr_in *));
-
-  int temp = 2;
-  for(loop = 0; loop < countPeers; loop++) {
-    p2p_peers[loop] = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
-
-    for(; temp < argc; temp++) {
-      int index = containsChar(argv[temp], '/');
-      if(index >= 0) {
-	char * peer = getSubstring(argv[temp], 0, index-1);
-	char * port = getSubstring(argv[temp], index+1, strlen(argv[temp]));
-
-	if(atoi(port) < 1025 || atoi(port) > 65536) {
-	  printf("error: the argument %s must use a port in the unreserved range\n", argv[temp]);
-	  exit(1);
+    int index = containsChar(argv[loop], '/');
+    if(index >= 0) {
+      struct p2p_peer * p = createPeer(argv[loop]);
+      if(p != NULL) {
+	if(isPeerInList(p2p_peers, p) == 0) {
+	  if(isFirstPeer == 1) {
+	    p2p_peers = p;
+	    temp_peer = p2p_peers;
+	    isFirstPeer = 0;
+	  } else {
+	    temp_peer->next_peer = p;
+	    temp_peer = temp_peer->next_peer;
+	  }
+	  countPeers++;
 	}
-	(p2p_peers[loop])->sin_port = htons(atoi(port));
-
-	if(inet_pton(AF_INET, peer, &(p2p_peers[loop])->sin_addr) != 1) {
-	  printf("error: the argument %s must use a valid ip address\n", argv[temp]);
-	  exit(1);
+      }
+      continue;
+    } else {
+      struct p2p_file * f = createFile(argv[loop]);
+      if(f != NULL) {
+	if(isFileInList(p2p_files, f) == 0) {
+	  if(isFirstFile == 1) {
+            p2p_files = f;
+            temp_file = p2p_files;
+            isFirstFile = 0;
+          } else {
+            temp_file->next_file = f;
+            temp_file = temp_file->next_file;
+          }
+	  countFiles++;
 	}
-
-	free(peer);
-	free(port);
-
-	temp++;
-	break;
       }
     }
   }
 
-  /**
-   Verify p2p files are valid
-  **/
-  for(temp = 2; temp < argc; temp++) {
-    if(containsChar(argv[temp], '/') == -1) {
-      // need regex expression for strict filename format
+  if(countPeers > 0) {
+    temp_peer = p2p_peers;
+    char tempIp[INET_ADDRSTRLEN];
+    int tempPort;
+    do {
+      tempPort = ntohs(temp_peer->socket.sin_port);
+      inet_ntop(AF_INET, &(temp_peer->socket.sin_addr), tempIp, INET_ADDRSTRLEN);
+      printf("Loaded peer -> %s:%d\n", tempIp, tempPort);
+      if(temp_peer->next_peer != NULL)
+	temp_peer = temp_peer->next_peer;
+      else 
+	temp_peer = NULL;
+    } while(temp_peer != NULL);
+  }
 
-      char filename[30] = "content/";
-      strcat(filename, argv[temp]);
-
-      FILE * fileio;
-      fileio = fopen(filename, "r");
-      if(fileio == NULL) {
-	printf("error: missing a content file called %s\n", argv[temp]);
-	exit(1);
-      } else {
-	fclose(fileio);
-      }
-    }
+  if(countFiles > 0) {
+    temp_file = p2p_files;
+    do {
+      printf("Loaded file -> %s\n", temp_file->filename);
+      if(temp_file->next_file != NULL)
+	temp_file = temp_file->next_file;
+      else 
+	temp_file = NULL;
+    } while(temp_file != NULL);
   }
 
   /**
-   Listen for incoming requests
+   Spawn threads
   **/
-  // startListener(listeningPort); // untested code
+  //struct p2p_peer * p2p_peers - the list of p2p_peers in linked list
+  //struct p2p_file * p2p_files - the list of p2p_files in linked list
+  //using above data structures - perform initialization
+
+  /* When p2p is first started, sends a listing message to all of its initial peers */
+
+  /**
+   Listen for stdin?
+  **/
+  // void listenOnStdin()
 
   /**
    Teardown of program
   **/
-  for(loop = 0; loop < countPeers; loop++) {
-    free(p2p_peers[loop]);
-  }
-  free(p2p_peers);
+  temp_peer = p2p_peers;
+  do {
+    free(temp_peer);
+    if(temp_peer->next_peer != NULL)
+      temp_peer = temp_peer->next_peer;
+    else 
+      temp_peer = NULL;
+  } while(temp_peer != NULL);
+
+  temp_file = p2p_files;
+  do {
+    free(temp_file);
+    if(temp_file->next_file != NULL)
+      temp_file = temp_file->next_file;
+    else
+      temp_file = NULL;
+  } while(temp_file != NULL);
 
   return 0;
 }
 
-void startListener(int udpPort) {
-  int socket_fd;
-  //int client_fd; // is this really needed?
-  int status = 0;
-  int numOfBytes = 0;
+struct p2p_peer * createPeer(char * argument) {
+  int index = containsChar(argument, '/');
+  char * ip   = getSubstring(argument, 0, index-1);
+  char * port = getSubstring(argument, index+1, strlen(argument));
 
-  char udpService[10];
-  char udpBuffer[256];
+  struct p2p_peer * rv = (struct p2p_peer *) malloc(sizeof(struct p2p_peer));
+  memset(rv, 0, sizeof(struct p2p_peer));
 
-  struct addrinfo hints;
-  struct addrinfo *listener;
-  struct sockaddr_storage client_addr;
-  socklen_t addr_len;
+  if(atoi(port) < 1025 || atoi(port) > 65536) {
+    printf("error: the argument %s must use a port in the unreserved range\n", argument);
+    exit(1);
+  } else {
+    rv->socket.sin_port = htons(atoi(port));
+  }
 
-  sprintf(udpService, "%d", udpPort);
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_DGRAM;
-  hints.ai_flags = AI_PASSIVE;
-
-  if((status = getaddrinfo(NULL, udpService, &hints, &listener)) != 0) {
-    fprintf(stderr, "error: getaddrinfo -> %s\n", gai_strerror(status));
+  if(inet_pton(AF_INET, ip, &(rv->socket.sin_addr)) != 1) {
+    printf("error: the argument %s must use a valid ip address\n", argument);
     exit(1);
   }
 
-  socket_fd = socket(listener->ai_family, listener->ai_socktype,
-                      listener->ai_protocol);
-  if(socket_fd == -1) {
-    fprintf(stderr, "error: socket -> %s\n", strerror(errno));
-    exit(1);
-  }
-
-  if((bind(socket_fd, listener->ai_addr, listener->ai_addrlen)) == -1) {
-    fprintf(stderr, "error: bind -> %s\n", strerror(errno));
-    exit(2);
-  }
-
-  printf("listener: waiting to recvfrom...\n");
-
-  addr_len = sizeof(client_addr);
-
-  //numOfBytes = recvfrom(socket_fd, udpBuffer, 
-
-  //*/
+  return rv;
 }
+
+/**
+ Check to see if the peer is already added to the list
+ Returns 0 if the peer_ip is not in the list
+ Returns 1 if the peer_ip IS in the list
+ Returns < 0 if an error has occurred
+**/
+int isPeerInList(struct p2p_peer * peers, struct p2p_peer * peer) {
+  struct p2p_peer * temp = peers;
+
+  if(temp == NULL && peer != NULL)
+    return 0;
+
+  if(peer == NULL)
+    return -1; /* peer should NOT be NULL */
+
+  if(temp != NULL && peer != NULL) {
+    do {
+      if(peer->socket.sin_addr.s_addr == temp->socket.sin_addr.s_addr)
+        if(peer->socket.sin_port == temp->socket.sin_port)
+          return 1;
+      if(temp->next_peer != NULL)
+        temp = temp->next_peer;
+      else
+        temp = NULL;
+    } while(temp != NULL);
+    return 0;
+  }
+  return -1; /* code should not be reached */
+}
+
+struct p2p_file * createFile(char * argument) {
+  struct p2p_file * rv = (struct p2p_file *) malloc(sizeof(struct p2p_file));
+  memset(rv, 0, sizeof(struct p2p_file));
+
+  if(validFilename(argument) == 0) {
+    printf("error: invalid filename %s\n", argument);
+    exit(1);
+  }
+
+  FILE * fileio;
+  fileio = fopen(argument, "r");
+  if(fileio == NULL) {
+    printf("error: missing a content file called %s\n", argument);
+    exit(1);
+  } else {
+    fclose(fileio);
+  }
+  
+  strcpy(rv->filename, argument);
+  return rv;
+}
+
+/**
+ Check to see if the peer is already added to the list
+ Returns 0 if the peer_ip is not in the list
+ Returns 1 if the peer_ip IS in the list
+ Returns < 0 if an error has occurred
+**/
+int isFileInList(struct p2p_file * files, struct p2p_file * file) {
+  struct p2p_file * temp = files;
+
+  if(temp == NULL && file != NULL)
+    return 0;
+
+  if(file == NULL)
+    return -1; /* file should NOT be NULL */
+
+  if(temp != NULL && file != NULL) {
+    do {
+      if(strcmp(temp->filename,file->filename) == 0)
+	return 1;
+      if(temp->next_file != NULL)
+	temp = temp->next_file;
+      else 
+	temp = NULL;
+    } while(temp != NULL);
+    return 0;
+  }
+  return -1; /* code should not be reached */
+}
+
+/**
+ Pass in a peer and get the port as an int
+**/
+int getPeerPort(struct p2p_peer * peer) {
+  if(peer == NULL)
+    return -1;
+  return ntohs(peer->socket.sin_port);
+}
+
+/**
+ Pass in a peer and get the ip as a malloc'd char *
+**/
+char * getPeerIp(struct p2p_peer * peer) {
+  if(peer == NULL)
+    return NULL;
+
+  char * rv = (char *) malloc(INET_ADDRSTRLEN);
+  if(inet_ntop(AF_INET, &(peer->socket.sin_addr), rv, INET_ADDRSTRLEN) == NULL)
+    return NULL;
+  else
+    return rv;
+}
+
