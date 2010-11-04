@@ -8,6 +8,11 @@
 #include<string.h>
 #include<unistd.h>
 #include <pthread.h>
+#include "Cache.h"
+#include "liblru.h"
+
+extern List *head_data_cache;
+extern List *head_content_cache;
 
 typedef struct _UDPHandler
 {
@@ -30,5 +35,7 @@ void *handle_stdin(void *iohandler);
 void *handle_timeouts(void *timeouthandler);
 
 
+extern Cache data_cache;
+extern Cache content_cache;
 
 #endif

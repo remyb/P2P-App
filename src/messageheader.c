@@ -1,6 +1,11 @@
 #include "messageheader.h"
 
-int main()
+void print_ntwkbytes(char *buff,int len)
 {
-	return 0;
+	int i;
+	for(i = 0; i < len; ++i) {
+		printf("%X",(uint8_t)buff[i]);
+		printf(" ");
+	}
+	printf("\n");
 }

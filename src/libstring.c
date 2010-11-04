@@ -28,28 +28,3 @@ char * getSubstring(char * string, int begin, int end) {
 
   return rv;
 }
-
-int validFilename(char * string) {
-  int period = 1;
-  int loop = 0;
-
-  if(strlen(string) > 20) {
-    return 0;
-  }
-
-  for(loop = 0; loop < strlen(string); loop++) {
-    if(string[loop] < 97 || string[loop] > 122) {
-      if(string[loop] == 46 && period < 1)
-        return 0;
-      if(string[loop] == 46 && period > 0) {
-        period--;
-        continue;
-      }
-      if(string[loop] > 47 && string[loop] < 58) 
-	continue;
-      if(string[loop] != 95)
-        return 0;
-    }
-  }
-  return 1;
-}

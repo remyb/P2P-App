@@ -69,3 +69,18 @@ typedef struct _TryMsg
 	uint16_t count;
 	Pair pair[6]; //6*6 = 36
 }packed_data TryMsg;
+
+typedef union _GenericMsg
+{
+	char ntwbytes[1200];
+	union
+	{
+		uint8_t magic_no;
+		TryMsg trymsg;
+		DataMsg datamsg;
+		ListingMsg lstmsg;
+		ReqMsg reqmsg;
+	};
+}GenericMsg;
+
+void print_ntwkbytes(char *,int);

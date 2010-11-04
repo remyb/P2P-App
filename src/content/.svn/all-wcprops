@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/ironserver_p2p/!svn/ver/1/content
+END
+test
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/ironserver_p2p/!svn/ver/1/content/test
+END
+test.txt
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/ironserver_p2p/!svn/ver/1/content/test.txt
+END

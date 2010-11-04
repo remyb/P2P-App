@@ -1,11 +1,12 @@
 #include "udp.h"
 #include <fcntl.h>
+#include "messageheader.h"
 
 //This program does the  testing only
 int ret_udp_sockfd(char *addr,char *port)
 {
 	struct addrinfo *p;
-	char buff[] = "Holla ";
+	char buff[] = "Holla ami";
 	int listening_fd;
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
@@ -36,7 +37,14 @@ int ret_udp_sockfd(char *addr,char *port)
 		freeaddrinfo(servinfo);
 		return -1;
 	}
-	if(sendto(listening_fd,buff,strlen(buff),0,p->ai_addr,p->ai_addrlen) <= -1)
+	GenericMsg genmsg;
+	bzero(&genmsg,sizeof genmsg);
+	genmsg.magic_no = 0xDD;
+	strcpy(genmsg.datamsg.content_name,"edo");
+	genmsg.datamsg.content_len = 3;
+	strcpy(genmsg.datamsg.content,"He");
+
+	if(sendto(listening_fd,&genmsg,sizeof genmsg,0,p->ai_addr,p->ai_addrlen) <= -1)
 	{
 		perror("sendto");
 		exit(1);

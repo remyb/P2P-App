@@ -1,6 +1,7 @@
+#include "liblru.h"
 
-/**
   // Example Usage 
+/*
 void main() {
   struct llist * head = 0, * tail = 0, * temp = 0;
 
@@ -24,8 +25,13 @@ void main() {
   temp->number = 20;
   addNode(&head, temp);
   printlru(head);
+  
+  temp = (struct llist *) malloc(sizeof(struct llist));
+  temp->number = 20;
+  cleanAllNodes(*head);
+  printlru(head);
 }
- **/
+*/
 
 /**
  Helper function for debugging
@@ -39,7 +45,7 @@ void printlru(struct llist * head) {
     node = head;
     printf("h ");
     do {
-      printf("%d ", node->number);
+      printf("[%s=>%s:%d] ",node->cache.name,inet_ntoa(node->cache.peer.ip),ntohs(node->cache.peer.port) );
       node = node->next;
     } while(node != NULL);
     printf("t \n");
@@ -50,7 +56,7 @@ void printlru(struct llist * head) {
 /**
  Determines if the value is cached; if so, return the node
 **/
-struct llist * isCached(struct llist * head, int value) {
+struct llist * isCached(struct llist * head, Cache cache) {
   if(head == NULL)
     return NULL;
 
@@ -58,7 +64,8 @@ struct llist * isCached(struct llist * head, int value) {
   node = head;
 
   do {
-    if(node->number == value)
+    //if(node->number == cache)
+    if(cache.name == node->cache.name && cache.peer.ip == node->cache.peer.ip && cache.peer.port == node->cache.peer.port)
       return node;
     else
       node = node->next;
@@ -76,11 +83,11 @@ void addNode(struct llist ** head, struct llist * newNode) {
   struct llist * locator, * temp;
 
   if((*head) != NULL) {
-    locator = isCached((*head), newNode->number);
-    if(locator != NULL) {
-      printf("found duplicate node!\n");
-      removeNode(&locator);
-    }
+    //locator = isCached((*head), newNode->number);
+    //if(locator != NULL) {
+    //  printf("found duplicate node!\n");
+    //  removeNode(&locator);
+    //}
 
     temp = (*head);
     if(temp->next != NULL) {
@@ -114,6 +121,14 @@ void removeNode(struct llist ** node) {
     (*node)->prev->next = NULL;
     (*node) = (*node)->prev;
   }
+}
+
+void cleanAllNodes(struct llist **head) {
+    while(*head != NULL){
+        struct llist *temp = *head;
+        free(*head);
+        *head = temp->next;
+    }
 }
 
 /**

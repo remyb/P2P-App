@@ -1,22 +1,32 @@
 #include "udp.h"
 #include <fcntl.h>
+#include "messageheader.h"
+
 
 #define nonblock(sock) (fcntl(sock,F_SETFL,O_NONBLOCK))
+#define LOCK(thread) pthread_mutex_lock(thread)
+#define UNLOCK(thread) pthread_mutex_unlock(thread)
+//global Vars
 int thread_count = 0;
+pthread_mutex_t threadwatch_1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t threadwatch_2 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t threadwatch_3 = PTHREAD_MUTEX_INITIALIZER;
+//remove it later
 pthread_mutex_t threadwatch = PTHREAD_MUTEX_INITIALIZER;
+
 
 void thread_increment()
 {
-	pthread_mutex_lock(&threadwatch);
+	LOCK(&threadwatch);
 	++thread_count;
-	pthread_mutex_unlock(&threadwatch);
+	UNLOCK(&threadwatch);
 }
 
 void thread_decrement()
 {
-	pthread_mutex_lock(&threadwatch);
+	LOCK(&threadwatch);
 	--thread_count;
-	pthread_mutex_unlock(&threadwatch);
+	UNLOCK(&threadwatch);
 }
 
 int ret_udp_sockfd(char *addr,char *port)
@@ -72,15 +82,14 @@ void *handle_p2p_client(void *udphandler)
 	pthread_detach(pthread_self());
 	thread_increment();
 	UDPHandler *udp_handler = (UDPHandler *)udphandler;
-	//lets start recv
-	char buff[10];
 	struct sockaddr_in src_addr;
 	socklen_t tsz;
+	GenericMsg genmsg;
 	//write your sending/recv message logic
 	while(1)
 	{
 		tsz=sizeof src_addr;
-		bzero(buff,sizeof buff);
+		bzero(&genmsg,sizeof genmsg);
 		//handle messages 
 //TODO
 /*
@@ -116,13 +125,51 @@ Receiving a Listing Message
 
 When p2p receives a listing message, it adds the information to its content directory. The peer's address is obtained from the IP number and port number returned by the recvfrom system call. 
 */
-		if(recvfrom(udp_handler->sockfd,buff,sizeof buff,0,(struct sockaddr *)&src_addr,&tsz) <= 0)
+   
+		if(recvfrom(udp_handler->sockfd,&genmsg,sizeof genmsg,0,(struct sockaddr *)&src_addr,&tsz) <= 0)
 		{
 			perror("recvfrom");
 			thread_decrement();
 			pthread_exit(NULL);
 		}
-		fprintf(stderr,"client says %s\n",buff);
+		//DEBUG
+		print_ntwkbytes(genmsg.ntwbytes,sizeof genmsg);
+		fprintf(stderr,"magic no = 0x%X\n",genmsg.magic_no);
+		
+		switch(genmsg.magic_no)
+		{
+			//DATA message
+			case 0xDD:
+			//process genmsg.datamsg 
+			fprintf(stderr,"GOT DATA MESSAGE\n");
+			List *dataNode = (List *)malloc(sizeof(List));
+			strcpy(dataNode->cache.name,genmsg.datamsg.content_name);
+			printf("datanode peer name= %s\n",dataNode->cache.name);
+			//ips/ports
+			dataNode->cache.peer.ip = src_addr.sin_addr.s_addr;
+			dataNode->cache.peer.port = src_addr.sin_port;
+			printf("Ip = %s, Port = %d\n",inet_ntoa(dataNode->cache.peer.ip),ntohs(dataNode->cache.peer.port));
+			dataNode->cache.content_len = genmsg.datamsg.content_len;
+			dataNode->cache.content = (char *) malloc(dataNode->cache.content_len);
+			strncpy(dataNode->cache.content,genmsg.datamsg.content,dataNode->cache.content_len);
+			printf("Content = %s\n",dataNode->cache.content);
+			//use mutex here
+			if(isCached(head_data_cache,dataNode->cache) == NULL)
+				addNode(&head_data_cache,dataNode);
+			printlru(head_data_cache);
+			
+			//TODO
+			//do free at the end
+			//free(dataNode->cache.content);
+			//free(dataNode);
+			break;
+			case 0xCC:
+			fprintf(stderr,"GOT CONTROL MESSAGE");
+			break;
+			default:
+			fprintf(stderr,"wrong magic_no = %d",genmsg.magic_no);
+		}
+		//fprintf(stderr,"client says %s\n",buff);
 	}
 	thread_decrement();
 
@@ -141,6 +188,30 @@ void *handle_stdin(void *iohandler)
 	pthread_exit(NULL);
 }
 
+
+//sending listing messages
+/*
+Sending Listing Messages
+
+p2p sends a listing message every 240 seconds (every 4 minutes) to every peer listed in its content directory or on its command line. Only one message is sent to each peer, even if the peer appears multiple times in the content directory and on the command line.
+
+The contents of the message are the local contents, the contents of the data cache, and the contents of the content directory. If the total number of items to be sent exceeds the maximum length of the listing message (56 entries), only send as many entries as fit in the message. You may choose, any way you wish, which entries to send. 
+
+			break;
+			case 0xCC:
+			break;
+			default:
+			fprintf(stderr,"wrong magic_no = %d",magic_no);
+		}
+		//fprintf(stderr,"client says %s\n",buff);
+	}
+	thread_decrement();
+
+	pthread_exit(NULL);
+
+}
+*/
+
 //handle timeouts
 void *handle_timeouts(void *timeouthandler)
 {
@@ -156,8 +227,8 @@ void *handle_timeouts(void *timeouthandler)
 Timeouts
 Any outstanding request that is older than 5 seconds should be deleted. At this time, if the content is listed in the content directory, all content directory entries for this content should be removed, since the request failed and we cannot trust that the peers have the content they are listed as having. 
 */
-		//say hi
-		fprintf(stderr,"Hi\n");
+		//say hi to Ami
+		fprintf(stderr,"Hi Ami\n");
 	}
 	thread_decrement();
 	pthread_exit(NULL);
@@ -179,12 +250,22 @@ void *send_listing_msg(void *data)
 	struct sockaddr_in remote_addr;
 	while(1)
 	{
-		sleep(240);
+		sleep(240); //4 mins
 		udphandler.sockfd = udphandler.ret_listening_sockfd("0.0.0.0","0");
 		int peer_no = 0;
-        ListingMsg control_msg;
-        lmsg.control_msg.magic_no = 0xCC;
-		lmsg.control_msg.message_count
+		ListingMsg lmsg;
+		lmsg.control_msg.magic_no = 0xCC;
+		lmsg.control_msg.selector_value = 0x4C; //#define MACRO ???
+		lmsg.message_count = 10; //change it later;
+		int message_no = 0;
+		socklen_t len = sizeof remote_addr;
+		for(;message_no < lmsg.message_count;++message_no)
+		{
+			//populate Resource Name here.
+			//populate Remote Address here.
+			sendto(udphandler.sockfd,&lmsg,sizeof lmsg,0,(struct sockaddr *)&remote_addr,len);
+
+		}	
 		
 		
 		
@@ -222,7 +303,6 @@ void *send_listing_msg(void *data)
 	}
 }
 #define MAX_THREADS 3
-#ifdef DEBUG
 int main(int argc,char **argv)
 {
 	UDPHandler udphandler;
@@ -251,5 +331,3 @@ int main(int argc,char **argv)
 	return 0;
 }
 
-
-#endif
