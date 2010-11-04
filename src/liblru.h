@@ -20,9 +20,11 @@
 
 decl_list(Cache,cache);
 
+//data = 0 ==> data cache
+//data = 1 ==> content cache
 
 void printlru(struct llist * head);
-struct llist * isCached(struct llist * head, Cache);
+struct llist * isCached(struct llist * head, Cache,int data);
 void addNode(struct llist ** tail, struct llist * newNode);
 void removeNode(struct llist ** node);
 int getNodeCount(struct llist * head);

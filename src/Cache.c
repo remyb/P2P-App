@@ -16,21 +16,11 @@ int write_cache_to_file(Cache *cache)
 	snprintf(buff,8,"%d",ntohs(cache->peer.port));
 	fprintf(fd,"%s",buff);
 	fprintf(fd,":");
-	fprintf(fd,"%s",cache->content);
 	fprintf(fd,"\n");
 	fclose(fd);
 }
 int is_content_present_in_dir(const char *content,Cache *cache)
 {
-	char *content_path = "./content/";
-	char *path = (char *)malloc(strlen(content_path) + strlen(cache->name) + 1);
-	strcpy(path,content_path);
-	strcpy(path + strlen(content_path),cache->name);
-	printf("path = %s\n",path);
-	FILE *fd = fopen(path,"r");
-
-	fclose(fd);
-
 }
 
 

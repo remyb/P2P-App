@@ -72,7 +72,7 @@ typedef struct _TryMsg
 
 typedef union _GenericMsg
 {
-	char ntwbytes[1200];
+	char ntwbytes[400];
 	union
 	{
 		uint8_t magic_no;

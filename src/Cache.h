@@ -23,9 +23,7 @@ typedef struct _Peer
 
 typedef struct _Cache
 {
-	char name[20];
-	char content_len;
-	char *content;
+	char name[20]; //filename
 	Peer peer;
 
 }Cache;

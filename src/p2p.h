@@ -10,5 +10,6 @@
 #include <netdb.h>
 
 #include "libstring.h"
+#include "libstring.c"
 
 void startListener(int udpPort);

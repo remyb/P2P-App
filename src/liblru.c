@@ -56,7 +56,7 @@ void printlru(struct llist * head) {
 /**
  Determines if the value is cached; if so, return the node
 **/
-struct llist * isCached(struct llist * head, Cache cache) {
+struct llist * isCached(struct llist * head, Cache cache,int data) {
   if(head == NULL)
     return NULL;
 
@@ -65,11 +65,23 @@ struct llist * isCached(struct llist * head, Cache cache) {
 
   do {
     //if(node->number == cache)
+		if(data == 1)
+		{
     if(cache.name == node->cache.name && cache.peer.ip == node->cache.peer.ip && cache.peer.port == node->cache.peer.port)
       return node;
     else
       node = node->next;
+		}
+		else if(data == 0)
+		{
+			if(strcmp(cache.name,node->cache.name) == 0)
+				return node;
+			else
+				node = node->next;
+		}
+
   } while(node != NULL);
+	
 
   return NULL;
 }

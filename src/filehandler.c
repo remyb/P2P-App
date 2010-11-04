@@ -1,21 +1,22 @@
 #include "filehandler.h"
 
 int create_content(char * filename, char * content, int content_len) {
-	FILE * io;
-	int loop = 0;
+  FILE * io;
+  int loop = 0;
 
-	io = fopen(filename,"r");
-	if(io != NULL) {
-		return 0;
-	} else {
-		io = fopen(filename,"r+");
-		fseek(io, 0, SEEK_SET);
-		for(loop = 0; loop < content_len; loop++) {
-			fputc(content[loop], io);
-		}
-		fclose(io);
-		return 1;
-	}
+  io = fopen(filename,"r");
+  if(io != NULL) {
+    fclose(io);
+    return 0;
+  } else {
+    io = fopen(filename,"w+");
+    fseek(io, 0, SEEK_SET);
+    for(loop = 0; loop < content_len; loop++) {
+      fputc(content[loop], io);
+    }
+    fclose(io);
+    return 1;
+  }
 }
 
 char * readWholeFile(char * filename, int * content_len) {
