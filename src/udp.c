@@ -1,6 +1,7 @@
 #include "udp.h"
 #include <fcntl.h>
 #include "messageheader.h"
+#include "filehandler.h"
 
 
 #define nonblock(sock) (fcntl(sock,F_SETFL,O_NONBLOCK))
@@ -75,6 +76,51 @@ int ret_udp_sockfd(char *addr,char *port)
 	return listening_fd;
 }
 
+void add_to_data_content(const struct sockaddr_in *src_addr,const GenericMsg *genmsg)
+{
+			List *dataNode = (List *)malloc(sizeof(List));
+			strcpy(dataNode->cache.name,genmsg->datamsg.content_name);
+			printf("datanode peer name= %s\n",dataNode->cache.name);
+			dataNode->cache.peer.ip = src_addr->sin_addr.s_addr;
+			dataNode->cache.peer.port = src_addr->sin_port;
+			printf("Ip = %s, Port = %d\n",inet_ntoa(dataNode->cache.peer.ip),ntohs(dataNode->cache.peer.port));
+			dataNode->cache.content_len = genmsg->datamsg.content_len;
+			dataNode->cache.content = (char *) malloc(dataNode->cache.content_len);
+			strncpy(dataNode->cache.content,genmsg->datamsg.content,dataNode->cache.content_len);
+			printf("Content = %s\n",dataNode->cache.content);
+			//use mutex here
+			if(isCached(head_data_cache,dataNode->cache) == NULL)
+				addNode(&head_data_cache,dataNode);
+			printlru(head_data_cache);
+			write_cache_to_file(&dataNode->cache);
+}
+
+void on_recv_req_msg(GenericMsg *genmsg,Cache cache)
+{
+	if(!file_exist(genmsg->reqmsg.name))
+	{
+		fprintf(stderr,"Discarding message for %s, Absent in content/\n",genmsg->reqmsg.name);
+		return;
+	}
+	else
+	{
+		//search the content in that file
+	}
+	//TODO search into local content
+	//Currently only doing for data cache
+	List *node_found = NULL;
+	if((node_found = isCached(head_data_cache,cache)) != NULL)
+	{
+		if(strcmp(node_found->name,genmsg.reqmsg.name) == 0)
+		{
+			//send data message
+		}
+	}
+
+
+	
+
+}
 //pthread callback
 //handles UDP connections
 void *handle_p2p_client(void *udphandler)
@@ -91,40 +137,6 @@ void *handle_p2p_client(void *udphandler)
 		tsz=sizeof src_addr;
 		bzero(&genmsg,sizeof genmsg);
 		//handle messages 
-//TODO
-/*
-Receiving a Data Message
-
-When p2p receives a data message corresponding to an outstanding request, it must save the data in a file (on disk, in the current directory) with the given name. It must also keep a copy of the contents in its data cache. p2p must also add the originator/name pair to the content directory if they are not already present, and must in any case update the use time for the entry. The originator is obtained from the recvfrom call. Finally, the request must be deleted from the list of outstanding requests.
-
-If a data message is received that does not correspond to any outstanding requests (or for which the request was sent more than 5 seconds ago), the data message should be discarded without modifying the caches and without saving to a file. p2p may print a message reporting this event.
-Receiving a Request Message
-
-If p2p receives a request and does not have the content and cannot locate the content in its content directory, the request must be discarded.
-
-If p2p receives a request message and has the specified content, either in the local content or in the data cache, p2p will in response send the corresponding data message. This data message will carry this p2p's address and port number in the originator field. If the content was in the data cache, the entry is updated to the current time for the LRU algorithm, i.e. this entry becomes the newest entry.
-
-If p2p does not have the content, but the content directory lists one or more peers who do have the content, the p2p will return a try message to the originator, listing all the peers in its content directory that are listed as having the content. This is equivalent to an iterative DNS query. A p2p getting such a request should also initiate its own request for this content, as follows.
-Sending a Request Message
-
-When there is a request for content, either requested by the user or by another peer, p2p must generate a request.
-
-If there are more than 3 outstanding requests (each request may be to multiple peers), the oldest outstanding request is removed, and the new one is added instead.
-
-If the requested content is listed in the content directory, a request is sent to each of the peers listed as having the content. This counts as a single outstanding request.
-
-Otherwise, and only if this is a user request, the request is sent once to each of the peers listed in the content directory, even though they do not list the requested content. Again, this counts as a single outstanding request.
-Receiving a Try Message
-
-When p2p receives a try message corresponding to a user request, it must add all of the listed peers to its content directory. The process then resumes as described under "sending a Request Message", except that, optionally, p2p may only send the request to any new peers that were not previously known to have the content. If there are no new peers for this content, p2p need not send any request messages.
-
-Each item should be requested at most 5 times, that is, there can be at most 5 sequences of request messages sent for each user request.
-
-An item being requested as a result of receiving a request message, as described in the last sentence of "Receiving a Request Message", should not be requested more than once. That is, receiving a try message in response to such a request should result in updating the content directory but not sending further requests.
-Receiving a Listing Message
-
-When p2p receives a listing message, it adds the information to its content directory. The peer's address is obtained from the IP number and port number returned by the recvfrom system call. 
-*/
    
 		if(recvfrom(udp_handler->sockfd,&genmsg,sizeof genmsg,0,(struct sockaddr *)&src_addr,&tsz) <= 0)
 		{
@@ -142,21 +154,8 @@ When p2p receives a listing message, it adds the information to its content dire
 			case 0xDD:
 			//process genmsg.datamsg 
 			fprintf(stderr,"GOT DATA MESSAGE\n");
-			List *dataNode = (List *)malloc(sizeof(List));
-			strcpy(dataNode->cache.name,genmsg.datamsg.content_name);
-			printf("datanode peer name= %s\n",dataNode->cache.name);
 			//ips/ports
-			dataNode->cache.peer.ip = src_addr.sin_addr.s_addr;
-			dataNode->cache.peer.port = src_addr.sin_port;
-			printf("Ip = %s, Port = %d\n",inet_ntoa(dataNode->cache.peer.ip),ntohs(dataNode->cache.peer.port));
-			dataNode->cache.content_len = genmsg.datamsg.content_len;
-			dataNode->cache.content = (char *) malloc(dataNode->cache.content_len);
-			strncpy(dataNode->cache.content,genmsg.datamsg.content,dataNode->cache.content_len);
-			printf("Content = %s\n",dataNode->cache.content);
-			//use mutex here
-			if(isCached(head_data_cache,dataNode->cache) == NULL)
-				addNode(&head_data_cache,dataNode);
-			printlru(head_data_cache);
+			add_to_data_content(&src_addr,&genmsg);
 			
 			//TODO
 			//do free at the end
@@ -165,6 +164,27 @@ When p2p receives a listing message, it adds the information to its content dire
 			break;
 			case 0xCC:
 			fprintf(stderr,"GOT CONTROL MESSAGE");
+			switch(genmsg.ctrlmsgsign.selector_value)
+			{
+				//Req Msg
+				case 0x52:
+				fprintf(stderr,"GOT Req Message\n");
+				on_recv_req_msg(&genmsg);
+				break;
+				//Try Msg
+				case 0x54:
+				fprintf(stderr,"GOT Try Message\n");
+				on_recv_try_msg();
+				break;
+				//Listing Message
+				case 0x4C:
+				fprintf(stderr,"GOT Listing Message\n");
+				on_recv_listing_msg();
+				break;
+				default:
+
+			}
+
 			break;
 			default:
 			fprintf(stderr,"wrong magic_no = %d",genmsg.magic_no);

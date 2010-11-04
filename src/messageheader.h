@@ -76,6 +76,7 @@ typedef union _GenericMsg
 	union
 	{
 		uint8_t magic_no;
+		ControlMsgSign ctrlmsgsign;
 		TryMsg trymsg;
 		DataMsg datamsg;
 		ListingMsg lstmsg;

@@ -32,6 +32,7 @@ typedef struct _Cache
 //Cache data_cache,content_cache;
 
 int write_cache_to_file(Cache *cache);
+int is_content_present_in_dir(const char *content,Cache *cache);
 
 
 #endif
