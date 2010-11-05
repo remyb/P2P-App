@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.00])
 #AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
-AC_INIT(groceryden, 0.001, singh.amitesh@gmail.com)
+AC_INIT(p2p, 0.001, singh.amitesh@gmail.com)
 AM_INIT_AUTOMAKE(foreign -Wall)
 AC_CONFIG_SRCDIR([messageheader.h])
 AC_CONFIG_HEADERS([config.h])
