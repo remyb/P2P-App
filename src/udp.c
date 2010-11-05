@@ -337,7 +337,8 @@ void *handle_timeouts(void *timeouthandler)
 	{
 		sleep(5);
 		//write your timeout stuffs here
-    //TODO
+		//cleaning content dir
+		cleanAllNodes(&head_content_cache);
 	}
 	//thread_decrement();
 	pthread_exit(NULL);
