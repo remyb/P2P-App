@@ -183,6 +183,9 @@ int main(int argc, char *argv[])
 	pthread_join(tids[1],NULL);
 	pthread_join(tids[2],NULL);
 
+	//clean all the LRU lists
+	cleanAllNodes(&head_content_cache);
+	cleanAllNodes(&head_data_cache);
 
   return 0;
 }

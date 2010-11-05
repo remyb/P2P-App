@@ -13,13 +13,18 @@
 //global Vars
 UDPHandler udphandler;
 char *p2p_port;
-int thread_count = 0;
+
+
+
+//Mutex
 pthread_mutex_t threadwatch_1 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t threadwatch_2 = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t threadwatch_3 = PTHREAD_MUTEX_INITIALIZER;
 //remove it later
 pthread_mutex_t threadwatch = PTHREAD_MUTEX_INITIALIZER;
 
+
+int thread_count = 0;
 
 void thread_increment()
 {
@@ -177,7 +182,17 @@ void on_recv_req_msg(GenericMsg *genmsg)
 }
 void on_recv_try_msg(GenericMsg *genmsg)
 {
-  Cache cache;
+	uint16_t peer_count = 0;
+	for(;peer_count <genmsg->trymsg.count;++peer_count)
+	{
+		fprintf(stderr,"peer count = %d\n",peer_count);
+		List *node = (List *)malloc(sizeof(List));
+		node->cache.peer.ip = genmsg->trymsg.pair[peer_count].ip_addr;
+		node->cache.peer.port = genmsg->trymsg.pair[peer_count].port;
+		addNode(&head_content_cache,node);
+	}
+
+	//add all peers to content dir
   // 1) parse the message for the peers
   // 2) add the peers in the content directory
   // 3) for each received peer, send a request message to NEW peers only
@@ -185,8 +200,18 @@ void on_recv_try_msg(GenericMsg *genmsg)
 
 }
 
-void on_recv_listing_msg(GenericMsg *genmsg)
+void on_recv_listing_msg(GenericMsg *genmsg,struct sockaddr_in *src_addr)
 {
+	//add the entries into contend dir
+	uint16_t message_count = 0;
+	for(;message_count < genmsg->lstmsg.message_count;++message_count)
+	{
+		List *node = (List *)malloc(sizeof(List));
+		strcpy(node->cache.name,genmsg->lstmsg.res_name[message_count].name);
+		node->cache.peer.ip = src_addr->sin_addr.s_addr;
+		node->cache.peer.port = src_addr->sin_port;
+		addNode(&head_content_cache,node);
+	}
   // 1) when receiving a listing message, add the information to the content directory
   // 2) obtain ip and port from recvfrom call
 }
@@ -196,7 +221,7 @@ void on_recv_listing_msg(GenericMsg *genmsg)
 void * handle_p2p_client(void *data)
 {
 	pthread_detach(pthread_self());
-	thread_increment();
+	//thread_increment();
 	struct sockaddr_in src_addr;
 	socklen_t tsz;
 	GenericMsg genmsg;
@@ -243,7 +268,7 @@ void * handle_p2p_client(void *data)
 						//Listing Message
 					case 0x4C:
 						fprintf(stderr,"GOT Listing Message\n");
-						on_recv_listing_msg(&genmsg);
+						on_recv_listing_msg(&genmsg,&src_addr);
 						break;
 					default:
 						fprintf(stderr,"Invalid selector value\n");
@@ -263,7 +288,7 @@ void * handle_p2p_client(void *data)
 void *handle_stdin(void *iohandler)
 {
 	pthread_detach(pthread_self());
-	thread_increment();
+	//thread_increment();
 
 	char input[40];
 	printf("Type !quit <enter> to quit p2p\n");
@@ -297,7 +322,7 @@ void *handle_stdin(void *iohandler)
 	}
 
 
-	thread_decrement();
+	//thread_decrement();
 	pthread_exit(NULL);
 }
 
@@ -306,7 +331,7 @@ void *handle_stdin(void *iohandler)
 void *handle_timeouts(void *timeouthandler)
 {
 	pthread_detach(pthread_self());
-	thread_increment();
+	//thread_increment();
 	//wait for 5 secs
 	while(1)
 	{
@@ -317,10 +342,8 @@ void *handle_timeouts(void *timeouthandler)
 Timeouts
 Any outstanding request that is older than 5 seconds should be deleted. At this time, if the content is listed in the content directory, all content directory entries for this content should be removed, since the request failed and we cannot trust that the peers have the content they are listed as having. 
 */
-		//say hi to Ami
-		fprintf(stderr,"Hi Ami\n");
 	}
-	thread_decrement();
+	//thread_decrement();
 	pthread_exit(NULL);
 }
 
@@ -345,7 +368,6 @@ void *send_listing_msg(void *data)
 		bzero(&genmsg,sizeof genmsg);
 		genmsg.lstmsg.control_msg.magic_no = 0xCC;
 		genmsg.lstmsg.control_msg.selector_value = 0x4C; //#define MACRO ???
-		genmsg.lstmsg.message_count = getNodeCount(head_content_cache); //change it later;
 		socklen_t len = sizeof remote_addr;
 		if(head_content_cache==NULL)
 		{
@@ -355,21 +377,21 @@ void *send_listing_msg(void *data)
 		else
 		{
 			List *node = head_content_cache;
+			int count = 0;
 			do
 			{
 				bzero(&remote_addr,sizeof remote_addr);
 				remote_addr.sin_family = AF_INET;
 				remote_addr.sin_addr.s_addr = node->cache.peer.ip;
 				remote_addr.sin_port = node->cache.peer.port;
-				//printf("%s:%d\n",inet_ntoa(remote_addr.sin_addr),ntohs(remote_addr.sin_port));
-
-				//populate Resource Name here.
-				//populate Remote Address here.
+				strcpy(genmsg.lstmsg.res_name[count].name,node->cache.name);
 				if(sendto(udphandler.sockfd,&genmsg,sizeof genmsg,0,(struct sockaddr *)&remote_addr,len) <= 0)
 				{
 					perror("sendto");
 					fprintf(stderr,"Failed to send data to %s:%d\n",inet_ntoa(remote_addr.sin_addr),ntohs(remote_addr.sin_port));
 				}
+				++genmsg.lstmsg.message_count;
+				++count;
 #ifdef DEBUG
 				print_ntwkbytes(genmsg.ntwbytes,sizeof genmsg);
 #endif
