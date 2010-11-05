@@ -114,11 +114,10 @@ void add_to_data_content(const struct sockaddr_in *src_addr, const GenericMsg *g
 		printlru(head_content_cache);
 	}
 	//if file is not present in content dir, dump the content 
-	char *path = (char *)malloc(11 + strlen(genmsg->datamsg.content_name));
-	strcpy(path,"./content/");
-	strcat(path,genmsg->datamsg.content_name);
-	if(!file_exist(path))
-		create_content(path,genmsg->datamsg.content,genmsg->datamsg.content_len);
+	//char *path = (char *)malloc(1 + strlen(genmsg->datamsg.content_name));
+	//strcat(path,genmsg->datamsg.content_name);
+	if(!file_exist(genmsg->datamsg.content_name))
+		create_content(genmsg->datamsg.content_name,genmsg->datamsg.content,genmsg->datamsg.content_len);
 }
 
 void on_recv_req_msg(GenericMsg *genmsg)
@@ -274,6 +273,9 @@ void *handle_stdin(void *iohandler)
 
 	  if(strncmp(input,"!quit",5) == 0) {
 	    printf("Quitting...\n");
+			{
+				exit(1);
+			}
 	    break;
 	  } else {
 	    if(validFilename(input) == 0) {
