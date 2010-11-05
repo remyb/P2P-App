@@ -33,6 +33,7 @@ typedef struct _TOHandler
 void *handle_p2p_client(void *udphandler);
 void *handle_stdin(void *iohandler);
 void *handle_timeouts(void *timeouthandler);
+void *send_listing_msg(void *);
 
 
 extern Cache data_cache;
