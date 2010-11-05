@@ -35,19 +35,19 @@
 #define HAVE_UNISTD_H 1
 
 /* Name of package */
-#define PACKAGE "groceryden"
+#define PACKAGE "p2p"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "singh.amitesh@gmail.com"
+#define PACKAGE_BUGREPORT "remyb@hawaii.edu"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "groceryden"
+#define PACKAGE_NAME "p2p"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "groceryden 0.001"
+#define PACKAGE_STRING "p2p 0.001"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "groceryden"
+#define PACKAGE_TARNAME "p2p"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
