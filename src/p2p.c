@@ -140,6 +140,8 @@ int main(int argc, char *argv[])
     } else {
       if(validFilename(input) == 0) {
 	printf("Error: Invalid filename %s\n", input);
+      } else if(strlen(input) == 0) {
+	printf("Error: No query supplied.\n");
       } else {
 	if(isFilenameInList(input) == 1) {
 	  printf("Success: Requested content '%s' FOUND in the LOCAL cache!\n", input);
