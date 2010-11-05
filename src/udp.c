@@ -338,10 +338,6 @@ void *handle_timeouts(void *timeouthandler)
 		sleep(5);
 		//write your timeout stuffs here
     //TODO
-/*
-Timeouts
-Any outstanding request that is older than 5 seconds should be deleted. At this time, if the content is listed in the content directory, all content directory entries for this content should be removed, since the request failed and we cannot trust that the peers have the content they are listed as having. 
-*/
 	}
 	//thread_decrement();
 	pthread_exit(NULL);
@@ -363,7 +359,7 @@ void *send_listing_msg(void *data)
 	struct sockaddr_in remote_addr;
 	while(1)
 	{
-		sleep(10); //4 mins //TODO
+		sleep(240); //4 mins
 		GenericMsg genmsg;
 		bzero(&genmsg,sizeof genmsg);
 		genmsg.lstmsg.control_msg.magic_no = 0xCC;
