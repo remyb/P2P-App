@@ -1,6 +1,6 @@
 #include "filehandler.h"
 
-int create_content(char * filename, char * content, int content_len) {
+int create_content(char * filename, const char * content, int content_len) {
   FILE * io;
   int loop = 0;
 

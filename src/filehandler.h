@@ -10,4 +10,4 @@ int file_exist (char *filename);
 int getFileList(char *path);
 int deleteContent(char *filename);
 char *readWholeFile(char *,int *);
-int create_content(char *filename,char *content,int content_len);
+int create_content(char *filename,const char *content,int content_len);

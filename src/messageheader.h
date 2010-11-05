@@ -1,14 +1,10 @@
-//PS: Must compile this code using GCC compiler.
+#ifndef P2P_MSGHDR_H
+#define P2P_MSGHDR_H
 #include<stdio.h>
 #include<stdint.h>
-//This only works with GCC in my knowledge
-//not sure about other compilers.
-//other soln is to use buffer but code maintainace is high/buggy
-
 #define packed_data __attribute__((__packed__))
-
-
 #define NAME_LEN 20
+
 
 //NOTE:
 //Control Mesg ==> magic_no = 0xCC
@@ -85,3 +81,5 @@ typedef union _GenericMsg
 }GenericMsg;
 
 void print_ntwkbytes(char *,int);
+
+#endif

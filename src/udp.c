@@ -3,7 +3,6 @@
 #include "messageheader.h"
 #include "filehandler.h"
 
-
 #define MAX_THREADS 3
 
 #define nonblock(sock) (fcntl(sock,F_SETFL,O_NONBLOCK))
@@ -82,12 +81,13 @@ int ret_udp_sockfd(char *addr,char *port)
 	return listening_fd;
 }
 
-void add_to_data_content(const struct sockaddr_in *src_addr,const GenericMsg *genmsg)
+void add_to_data_content(const struct sockaddr_in *src_addr, const GenericMsg *genmsg)
 {
 	Cache cache;
 	strcpy(cache.name,genmsg->datamsg.content_name);
 	cache.peer.ip= src_addr->sin_addr.s_addr;
 	cache.peer.port= src_addr->sin_port;
+
 	//dataNode->cache.peer.ip = src_addr->sin_addr.s_addr;
 	///dataNode->cache.peer.port = src_addr->sin_port;
 	//printf("Ip = %s, Port = %d\n",inet_ntoa(dataNode->cache.peer.ip),ntohs(dataNode->cache.peer.port));
@@ -95,6 +95,7 @@ void add_to_data_content(const struct sockaddr_in *src_addr,const GenericMsg *ge
 	//dataNode->cache.content = (char *) malloc(dataNode->cache.content_len);
 	//strncpy(dataNode->cache.content,genmsg->datamsg.content,dataNode->cache.content_len);
 	//use mutex here
+
 	if(isCached(head_data_cache,cache,0) == NULL)
 	{
 		List *dataNode = (List *)malloc(sizeof(List));
@@ -177,20 +178,23 @@ void on_recv_req_msg(GenericMsg *genmsg)
 }
 void on_recv_try_msg(GenericMsg *genmsg)
 {
-	Cache cache;
-
-
+  Cache cache;
+  // 1) parse the message for the peers
+  // 2) add the peers in the content directory
+  // 3) for each received peer, send a request message to NEW peers only
+  // 4) max messages request sent are 5 
 
 }
 
 void on_recv_listing_msg(GenericMsg *genmsg)
 {
-
+  // 1) when receiving a listing message, add the information to the content directory
+  // 2) obtain ip and port from recvfrom call
 }
 
 //pthread callback
 //handles UDP connections
-void *handle_p2p_client(void *data)
+void * handle_p2p_client(void *data)
 {
 	pthread_detach(pthread_self());
 	thread_increment();
@@ -261,7 +265,36 @@ void *handle_stdin(void *iohandler)
 {
 	pthread_detach(pthread_self());
 	thread_increment();
-	int age;
+
+	char input[40];
+	printf("Type !quit <enter> to quit p2p\n");
+	while(1) {
+	  memset(&input, 0, 40);
+	  getInput(input, 40);
+
+	  if(strncmp(input,"!quit",5) == 0) {
+	    printf("Quitting...\n");
+	    break;
+	  } else {
+	    if(validFilename(input) == 0) {
+	      printf("Error: Invalid filename %s\n", input);
+	    } else {
+	      if(isFilenameInList(input) == 1) {
+		printf("Success: Requested content '%s' FOUND in the LOCAL cache!\n", input);
+	      } else if(0) { // check content cache
+
+	      } else if(0) { // check data cache
+
+	      } else if(0) { // perform "send a request message"
+
+	      } else {
+		printf("Failure: Requested content '%s' NOT found in any cache or remote peer.\n", input);
+	      }
+	    }
+	  }
+	}
+
+
 	thread_decrement();
 	pthread_exit(NULL);
 }
@@ -345,6 +378,8 @@ void *send_listing_msg(void *data)
 	}
 
 	}
+
+#ifdef DEBUG
 	int main(int argc,char **argv)
 	{
 		if(argc != 2)
@@ -375,3 +410,4 @@ void *send_listing_msg(void *data)
 		return 0;
 }
 
+#endif

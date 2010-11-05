@@ -1,5 +1,11 @@
 #include "p2p.h"
 
+/**
+ GLOBAL VARIABLES; do not uncomment
+ Sourced in p2p.h
+**/
+//struct p2p_peer * p2p_peers = NULL;
+//struct p2p_file * p2p_files = NULL;
 int main(int argc, char *argv[])
 {
   if(argc == 1) {
@@ -20,13 +26,13 @@ int main(int argc, char *argv[])
   int countFiles = 0;
   int loop = 0;
 
-  struct p2p_peer * p2p_peers = (struct p2p_peer *) malloc(sizeof(struct p2p_peer));
+  p2p_peers = (struct p2p_peer *) malloc(sizeof(struct p2p_peer));
   memset(p2p_peers, 0, sizeof(struct p2p_peer));
 
   struct p2p_peer * temp_peer = p2p_peers;
   int isFirstPeer = 1;
 
-  struct p2p_file * p2p_files = (struct p2p_file *) malloc(sizeof(struct p2p_file));
+  p2p_files = (struct p2p_file *) malloc(sizeof(struct p2p_file));
   memset(p2p_files, 0, sizeof(struct p2p_file));
 
   struct p2p_file * temp_file = p2p_files;
@@ -95,21 +101,62 @@ int main(int argc, char *argv[])
   }
 
   /**
+   Create UDP Handler
+  **/
+
+  //udphandler.ret_listening_sockfd = ret_udp_sockfd;
+  //udphandler.sockfd = udphandler.ret_listening_sockfd("0.0.0.0",p2p_port);
+
+  /**
    Spawn threads
   **/
-  //struct p2p_peer * p2p_peers - the list of p2p_peers in linked list
-  //struct p2p_file * p2p_files - the list of p2p_files in linked list
-  //using above data structures - perform initialization
 
-  /* When p2p is first started, sends a listing message to all of its initial peers */
+  pthread_t tids[3];
+
+  IOHandler iohandler;
+  pthread_create(&tids[0], NULL, handle_stdin, (void *)&iohandler);
+
+  //TOHandler timeouthandler;
+  //pthread_create(&tids[1],NULL,handle_timeouts,(void *)&timeouthandler);
+
+  //UDPHandler udphandler;
+  //pthread_create(&tids[0],NULL,handle_p2p_client,(void *)&udphandler);
 
   /**
-   Listen for stdin?
+   Listen from stdin
   **/
-  // void listenOnStdin()
+  /**
+  char input[40];
+  printf("Type !quit <enter> to quit p2p\n");
+  while(1) {
+    memset(&input, 0, 40);
+    getInput(input, 40);
+
+    if(strncmp(input,"!quit",5) == 0) {
+      printf("Quitting...\n");
+      break;
+    } else {
+      if(validFilename(input) == 0) {
+	printf("Error: Invalid filename %s\n", input);
+      } else {
+	if(isFilenameInList(input) == 1) {
+	  printf("Success: Requested content '%s' FOUND in the LOCAL cache!\n", input);
+	} else if(0) { // check content cache
+
+	} else if(0) { // check data cache
+
+	} else if(0) { // perform "send a request message"
+
+	} else {
+	  printf("Failure: Requested content '%s' NOT found in any cache or remote peer.\n", input);
+	}
+      }
+    }
+  }
+  **/
 
   /**
-   Teardown of program
+   Teardown of program... good bye!
   **/
   temp_peer = p2p_peers;
   do {
@@ -259,3 +306,33 @@ char * getPeerIp(struct p2p_peer * peer) {
     return rv;
 }
 
+/**
+ Helper function to read from stdin
+**/
+void getInput(char arrayInput [], int arrayLength)
+{
+  int tempInput;
+  int tempCounter = 0;
+  while((tempInput = fgetc(stdin)) != 10) {
+    if(arrayLength-1 > tempCounter) {
+      arrayInput[tempCounter] = tempInput;
+      tempCounter++;
+    }
+  }
+  arrayInput[tempCounter] = 0;
+}
+
+/**
+ Helper function check a filename from local_content
+**/
+int isFilenameInList(const char * filename) {
+  struct p2p_file f;
+  strcpy(f.filename, filename);
+  int result = isFileInList(p2p_files, &f);
+  if(result == 0)
+    return 0;
+  else if(result == 1)
+    return 1;
+  else
+    return -1;
+}
