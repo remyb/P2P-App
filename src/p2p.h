@@ -14,6 +14,7 @@
 #include "libstring.h"
 #include "udp.h"
 //#include "udp.h"
+
 //#include "udp.c" // required - preprocessor directives present
 
 // #include "libstring.c" // is this needed?
@@ -39,3 +40,7 @@ int getPeerPort(struct p2p_peer * peer);
 char * getPeerIp(struct p2p_peer * peer);
 void getInput(char arrayInput [], int arrayLength);
 int isFilenameInList(const char * filename);
+
+
+extern UDPHandler udphandler;
+extern char *p2p_port;

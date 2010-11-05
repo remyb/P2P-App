@@ -116,11 +116,14 @@ int main(int argc, char *argv[])
   IOHandler iohandler;
   pthread_create(&tids[0], NULL, handle_stdin, (void *)&iohandler);
 
-  //TOHandler timeouthandler;
-  //pthread_create(&tids[1],NULL,handle_timeouts,(void *)&timeouthandler);
+  p2p_port = argv[1];
+	udphandler.ret_listening_sockfd = ret_udp_sockfd;
+	udphandler.sockfd = udphandler.ret_listening_sockfd("0.0.0.0",p2p_port);
 
   //UDPHandler udphandler;
-  //pthread_create(&tids[0],NULL,handle_p2p_client,(void *)&udphandler);
+  pthread_create(&tids[1],NULL,handle_p2p_client,(void *)&udphandler);
+  TOHandler timeouthandler;
+  pthread_create(&tids[2],NULL,handle_timeouts,(void *)&timeouthandler);
 
   /**
    Listen from stdin
@@ -175,6 +178,11 @@ int main(int argc, char *argv[])
     else
       temp_file = NULL;
   } while(temp_file != NULL);
+
+	pthread_join(tids[0],NULL);
+	pthread_join(tids[1],NULL);
+	pthread_join(tids[2],NULL);
+
 
   return 0;
 }
