@@ -12,6 +12,7 @@
 
 #include "messageheader.h"
 #include "libstring.h"
+#include "udp.h"
 //#include "udp.h"
 //#include "udp.c" // required - preprocessor directives present
 
